@@ -1,0 +1,148 @@
+---
+import Base from '../../layouts/Base.astro';
+import { games, type LibraryGame } from '../../lib/games';
+
+export function getStaticPaths() {
+  return games.map((game) => ({ params: { slug: game.slug }, props: { game } }));
+}
+
+interface Props {
+  game: LibraryGame;
+}
+
+const { game } = Astro.props;
+---
+
+<Base
+  title={game.name}
+  description={`Play ${game.name} in your browser.`}
+  full
+>
+  <main class="player">
+    <header class="player-bar">
+      <a class="player-back" href="/" aria-label="Back to all games">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        <span>All games</span>
+      </a>
+
+      <div class="player-game">
+        <span class="player-icon">
+          <img src={game.icon} alt="" width="64" height="64" />
+        </span>
+        <h1>{game.name}</h1>
+      </div>
+
+      <div class="player-actions">
+        <a
+          class="player-action"
+          href={game.link}
+          target="_blank"
+          rel="noopener"
+          aria-label={`Open ${game.name} in a new tab`}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 3h6v6" />
+            <path d="M10 14 21 3" />
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          </svg>
+          <span>New tab</span>
+        </a>
+
+        <button
+          class="player-action"
+          id="fullscreen"
+          type="button"
+          aria-label="Enter fullscreen"
+          aria-pressed="false"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+          <span>Fullscreen</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="player-stage" id="stage">
+      <div class="player-loading" id="loading" aria-hidden="true">
+        <img src="/img/weluvsnakes-mark.png" alt="" width="306" height="272" />
+        <p class="meta">Loading {game.name}…</p>
+      </div>
+
+      <iframe
+        id="game"
+        src={game.link}
+        title={`${game.name} — play in browser`}
+        allow="autoplay; fullscreen; gamepad; clipboard-write; accelerometer; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </main>
+</Base>
+
+<script>
+  const frame = document.getElementById('game') as HTMLIFrameElement | null;
+  const loading = document.getElementById('loading');
+  const stage = document.getElementById('stage');
+  const fullscreen = document.getElementById('fullscreen');
+
+  // Reveal the iframe once the game has loaded, with a fallback so a slow or
+  // blocked frame never traps the visitor behind the loading screen.
+  if (frame && loading) {
+    const reveal = () => loading.classList.add('is-ready');
+    frame.addEventListener('load', reveal);
+    window.setTimeout(reveal, 12000);
+  }
+
+  if (stage && fullscreen) {
+    const label = fullscreen.querySelector('span');
+    fullscreen.addEventListener('click', () => {
+      if (document.fullscreenElement) {
+        void document.exitFullscreen();
+      } else {
+        void stage.requestFullscreen();
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const active = document.fullscreenElement === stage;
+      fullscreen.setAttribute('aria-pressed', String(active));
+      fullscreen.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
+      if (label) label.textContent = active ? 'Exit fullscreen' : 'Fullscreen';
+    });
+  }
+</script>
